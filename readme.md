@@ -35,7 +35,7 @@ helm template seed-vault ./vault-helm -n vault -f ./seed-values.yaml --set serve
 
 ## Initialize seed-vault
 
-this is a good tutorial: <https://learn.hashicorp.com/vault/operations/raft-storage>
+this is a good tutorial: https://learn.hashicorp.com/vault/operations/raft-storage
 
 ```shell
 SEED_INIT_RESPONSE=$(oc exec seed-vault-0 -n vault -- vault operator init -address https://seed-vault:8200 -ca-path /etc/vault-tls/seed-vault-tls/ca.crt -format=json -key-shares=1 -key-threshold=1)
@@ -80,13 +80,6 @@ echo "$HA_VAULT_TOKEN"
 oc create secret generic vault-init -n vault --from-literal=unseal_key=${HA_UNSEAL_KEY} --from-literal=root_token=${HA_VAULT_TOKEN}
 ```
 
-## Create Raft cluster for HA-vault
-
-```shell
-oc exec vault-1 -n vault -- sh -c 'vault operator raft join -address https://vault-1.vault-internal:8200 -ca-path /etc/vault-tls/vault-tls/ca.crt -leader-ca-cert="`cat /etc/vault-tls/vault-tls/ca.crt`" https://vault-0.vault-internal:8200'
-oc exec vault-2 -n vault -- sh -c 'vault operator raft join -address https://vault-2.vault-internal:8200 -ca-path /etc/vault-tls/vault-tls/ca.crt -leader-ca-cert="`cat /etc/vault-tls/vault-tls/ca.crt`" https://vault-0.vault-internal:8200'
-```
-
 ## Verify the cluster
 
 ```shell
@@ -113,6 +106,7 @@ to access the vault ui browse here:
 ```shell
 echo $VAULT_ADDR/ui
 ```
+
 
 ## Vault cert-manager integration
 
@@ -157,3 +151,17 @@ envsubst < vault-issuer.yaml | oc apply -f - -n vault
 ```shell
 oc apply -f ./sample-vault-cert.yaml -n vault
 ```
+
+## Alternative deployment using AWS KMS for auto unseal
+
+Dont' deploy vault-seed at all
+
+```shell
+oc apply -f kms-cloud-credentials.yaml
+export region=$(oc get infrastructure cluster -o jsonpath='{.status.platformStatus.aws.region}')
+export key_id=$(aws --region ${region} kms create-key | jq -r .KeyMetadata.KeyId)
+envsubst < kms-values.yaml.template > values.yaml
+helm template vault ./vault-helm -n vault -f ./values.yaml --set server.gid=${sguid} --set server.uid=${uid} --set injector.gid=${sguid} --set injector.uid=${uid} | oc apply -f -
+```
+
+After this continue with "Initialize HA-vault"

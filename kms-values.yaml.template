@@ -3,12 +3,16 @@ global:
 ui:
   enabled: true
 server:
+  extraSecretEnvironmentVars:
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: vault-aws-kms-credentials
+      secretKey: aws_secret_access_key
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: vault-aws-kms-credentials
+      secretKey: aws_access_key_id      
   image:
     tag: "1.4.2"
   extraVolumes:
-    - type: 'secret'
-      name: 'seed-vault-tls'
-      path: '/etc/vault-tls'
     - type: 'secret'
       name: 'vault-tls'
       path: '/etc/vault-tls'        
@@ -28,17 +32,11 @@ server:
           tls_client_ca_file="/etc/vault-tls/vault-tls/ca.crt"          
         }
 
-        seal "transit" {
-          address            = "https://seed-vault:8200"
-          token              = "${SEED_VAULT_TOKEN}"
-          disable_renewal    = "false"
-      
-          // Key configuration
-          key_name           = "unseal_key"
-          mount_path         = "transit/"      
-          tls_ca_cert        = "/etc/vault-tls/seed-vault-tls/ca.crt"
-                    
+        seal "awskms" {
+          region     = "${region}"
+          kms_key_id = "${key_id}"
         }
+
         storage "raft" {
           path = "/vault/data"
   
