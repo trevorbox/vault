@@ -1,3 +1,6 @@
 [submodule "vault-helm"]
 	path = vault-helm
 	url = https://github.com/hashicorp/vault-helm
+[submodule "hashicorp-vault-for-openshift"]
+	path = hashicorp-vault-for-openshift
+	url = https://github.com/openlab-red/hashicorp-vault-for-openshift

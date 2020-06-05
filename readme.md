@@ -165,3 +165,58 @@ helm template vault ./vault-helm -n vault -f ./values.yaml --set server.gid=${sg
 ```
 
 After this continue with "Initialize HA-vault"
+
+## Test Agent Sidecar Injector
+
+The *vault-helm* helm chart previously ran should have had following defined in **values.yaml**.
+
+```yaml
+injector:
+  # True if you want to enable vault agent injection.
+  enabled: true
+```
+
+Create a policy to allow the default service account access to the secret
+
+```sh
+export deploy_namespace=test-project
+oc new-project ${deploy_namespace}
+
+export VAULT_ADDR=https://$(oc get route vault-ui -n vault -o jsonpath='{.spec.host}')
+export VAULT_TOKEN=$(oc get secret vault-init -n vault -o jsonpath='{.data.root_token}' | base64 -d)
+vault auth enable -tls-skip-verify kubernetes
+oc adm policy add-cluster-role-to-user system:auth-delegator -z default -n ${deploy_namespace}
+export sa_secret_name=$(oc get sa default -n ${deploy_namespace} -o jsonpath='{.secrets[*].name}' | grep -o '\b\w*\-token-\w*\b')
+oc get secret ${sa_secret_name} -n ${deploy_namespace} -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
+vault write -tls-skip-verify auth/kubernetes/config token_reviewer_jwt="$(oc serviceaccounts get-token default -n ${deploy_namespace})" kubernetes_host=https://kubernetes.default.svc:443 kubernetes_ca_cert=@/tmp/ca.crt
+
+vault policy write -tls-skip-verify ${deploy_namespace} - <<EOF
+# Read key/value secrets for ${deploy_namespace} namespace
+path "secret/${deploy_namespace}/*"
+{
+  capabilities = ["read"]
+}
+EOF
+
+vault write -tls-skip-verify auth/kubernetes/role/${deploy_namespace} bound_service_account_names=default bound_service_account_namespaces=${deploy_namespace} policies=${deploy_namespace}
+
+vault secrets enable -tls-skip-verify -path=secret/ kv
+vault kv put -tls-skip-verify secret/${deploy_namespace}/hello foo=world excited=yes
+vault kv get -tls-skip-verify secret/${deploy_namespace}/hello
+
+oc extract secret/vault-tls --keys=ca.crt --to=/tmp/ --confirm -n vault
+oc create configmap vault-tls --from-file=/tmp/ca.crt -n ${deploy_namespace}
+
+helm template test-app -n ${deploy_namespace} | oc apply -f -
+
+```
+
+## Unseal process
+
+SEED_UNSEAL_KEY=$(oc extract secret/seed-vault-init --to=- --keys=unseal_key)
+
+```sh
+oc exec seed-vault-0 -n vault -- vault operator unseal -address https://seed-vault:8200 -ca-path /etc/vault-tls/seed-vault-tls/ca.crt "$SEED_UNSEAL_KEY"
+```
+
+Then, delete the vault-0 and vault-1 pods to rollout again.
