@@ -35,7 +35,7 @@ helm template seed-vault ./vault-helm -n vault -f ./seed-values.yaml --set serve
 
 ## Initialize seed-vault
 
-this is a good tutorial: https://learn.hashicorp.com/vault/operations/raft-storage
+this is a good tutorial: <https://learn.hashicorp.com/vault/operations/raft-storage>
 
 ```shell
 SEED_INIT_RESPONSE=$(oc exec seed-vault-0 -n vault -- vault operator init -address https://seed-vault:8200 -ca-path /etc/vault-tls/seed-vault-tls/ca.crt -format=json -key-shares=1 -key-threshold=1)
@@ -106,7 +106,6 @@ to access the vault ui browse here:
 ```shell
 echo $VAULT_ADDR/ui
 ```
-
 
 ## Vault cert-manager integration
 
