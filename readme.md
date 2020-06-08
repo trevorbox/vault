@@ -200,7 +200,9 @@ EOF
 vault write -tls-skip-verify auth/kubernetes/role/${deploy_namespace} bound_service_account_names=default bound_service_account_namespaces=${deploy_namespace} policies=${deploy_namespace}
 
 vault secrets enable -tls-skip-verify -path=secret/ kv
-vault kv put -tls-skip-verify secret/${deploy_namespace}/hello foo=world excited=yes
+
+# Refreshes secret after time to live period (5 minutes) passes by the agent. See https://www.vaultproject.io/docs/secrets/kv/kv-v1#ttls
+vault kv put -tls-skip-verify secret/${deploy_namespace}/hello ttl=5m foo=world excited=yes
 vault kv get -tls-skip-verify secret/${deploy_namespace}/hello
 
 oc extract secret/vault-tls --keys=ca.crt --to=/tmp/ --confirm -n vault
