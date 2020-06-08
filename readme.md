@@ -205,7 +205,7 @@ vault kv put -tls-skip-verify secret/${deploy_namespace}/hello foo=world excited
 vault kv get -tls-skip-verify secret/${deploy_namespace}/hello
 
 oc extract secret/vault-tls --keys=ca.crt --to=/tmp/ --confirm -n vault
-oc create configmap vault-tls --from-file=/tmp/ca.crt -n ${deploy_namespace}
+oc create secret generic vault-tls --from-file=/tmp/ca.crt -n ${deploy_namespace}
 
 helm template test-app -n ${deploy_namespace} | oc apply -f -
 
@@ -213,7 +213,7 @@ helm template test-app -n ${deploy_namespace} | oc apply -f -
 
 ## Unseal process
 
-SEED_UNSEAL_KEY=$(oc extract secret/seed-vault-init --to=- --keys=unseal_key)
+SEED_UNSEAL_KEY=$(oc extract secret/seed-vault-init --to=- --keys=unseal_key -n vault)
 
 ```sh
 oc exec seed-vault-0 -n vault -- vault operator unseal -address https://seed-vault:8200 -ca-path /etc/vault-tls/seed-vault-tls/ca.crt "$SEED_UNSEAL_KEY"

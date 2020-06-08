@@ -15,11 +15,8 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-inject-secret-hello: "secret/{{ .Release.Namespace }}/hello"
         vault.hashicorp.com/role: {{ .Release.Namespace }}
-        vault.hashicorp.com/ca-cert: '/var/run/secrets/kubernetes.io/serviceaccount/vault-tls/ca.crt'
-        #vault.hashicorp.com/agent-run-as-same-user: "true"
-        #vault.hashicorp.com/agent-set-security-context: "false"
-        #vault.hashicorp.com/agent-run-as-user: "10"
-        #vault.hashicorp.com/agent-run-as-group: "101"
+        vault.hashicorp.com/ca-cert: '/vault/tls/ca.crt'
+        vault.hashicorp.com/tls-secret: vault-tls
       labels:
         app: details
         version: v1
@@ -30,15 +27,3 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
-        #securityContext:
-        #  runAsUser: 1000610000
-        #  runAsGroup: 1000610000
-        #  runAsNonRoot: true
-        volumeMounts:
-          - mountPath: /var/run/secrets/kubernetes.io/serviceaccount/vault-tls
-            name: vault-tls
-      volumes:
-      - configMap:
-          name: vault-tls
-        name: vault-tls
-

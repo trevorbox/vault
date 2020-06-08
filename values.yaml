@@ -30,7 +30,7 @@ server:
 
         seal "transit" {
           address            = "https://seed-vault:8200"
-          token              = "s.nZKPPog7vvm7m4STXRCovMMc"
+          token              = ""
           disable_renewal    = "false"
       
           // Key configuration
@@ -78,7 +78,9 @@ server:
               component: server
           topologyKey: failure-domain.beta.kubernetes.io/zone        
 injector:
+  image:
+    tag: "0.4.0"
   agentImage:
     tag: "1.4.2"
-    #repository: "hashicorp/vault-k8s"
-    #tag: "0.4.0"
+  extraEnvironmentVars: 
+    AGENT_INJECT_SET_SECURITY_CONTEXT: "false"
