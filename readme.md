@@ -214,9 +214,8 @@ helm template test-app -n ${deploy_namespace} | oc apply -f -
 
 ## Unseal process
 
-SEED_UNSEAL_KEY=$(oc extract secret/seed-vault-init --to=- --keys=unseal_key -n vault)
-
 ```sh
+SEED_UNSEAL_KEY=$(oc extract secret/seed-vault-init --to=- --keys=unseal_key -n vault)
 oc exec seed-vault-0 -n vault -- vault operator unseal -address https://seed-vault:8200 -ca-path /etc/vault-tls/seed-vault-tls/ca.crt "$SEED_UNSEAL_KEY"
 ```
 
